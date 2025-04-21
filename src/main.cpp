@@ -42,6 +42,14 @@ public:
         }
         std::cout << "Successfully connected to mining pool." << std::endl;
 
+        // ===== Handshake Stratum =====
+        nerdminer::StratumClient stratum(connection);
+        if (!stratum.subscribe()) {
+            std::cerr << "Handshake failed." << std::endl;
+            return 1;
+        }
+        // ==============================
+
         connection.disconnect();
         std::cout << "Disconnected." << std::endl;
         return true;
