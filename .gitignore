@@ -1,0 +1,19 @@
+# Diretórios de saída
+/bin/
+/build/
+
+# Executáveis e artefatos de build
+nerdminer-rpi
+*.o
+*.d
+
+# Arquivos gerados por IDEs/editors
+.vscode/
+.idea/
+*.swp
+*~
+*.log
+
+# Outros arquivos temporários
+*.exe
+*.out
