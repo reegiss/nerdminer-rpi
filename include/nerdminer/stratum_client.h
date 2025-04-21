@@ -13,18 +13,38 @@
 
  #pragma once
 
- #include "network/connection.h"
+ #include <boost/asio.hpp>
+ #include <nlohmann/json.hpp>
 
- namespace nerdminer {
+namespace nerdminer {
 
-class StratumClient {
+using tcp = boost::asio::ip::tcp;
+using json = nlohmann::json;
+
+    class StratumClient {
     public:
-        explicit StratumClient(Connection& connection);
-
-        bool subscribe();
-
+        StratumClient(const std::string& host, uint16_t port,
+            const std::string& user, const std::string& password);
+        ~StratumClient();
+        void connect();
+        void subscribe();
+        void authorize();
+        void sendRequest(const json& req);
+        void listen();
+        std::function<void(const json&)> onNotification;
+        std::function<void(const json&)> onResponse;
     private:
-        Connection& conn_;
-};
+        void doRead();
+        void handleRead(const boost::system::error_code& ec, std::size_t bytes_transferred);
+        void handleWrite(const boost::system::error_code& ec, std::size_t bytes_transferred);
+        boost::asio::io_context ioContext_;
+        tcp::socket socket_;
+        std::string host_;
+        uint16_t port_;
+        std::string user_;
+        std::string password_;
+        boost::asio::streambuf buffer_;
+        int requestId_;
+    };
 
 } // namespace nerdminer

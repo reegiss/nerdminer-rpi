@@ -11,11 +11,10 @@
  * © 2025 Regis Araujo Melo
  */
 
-
- #include <iostream>
- #include <string>
- #include <nerdminer/version.h>
- #include <nerdminer/network/connection.h>
+#include <iostream>
+#include <string>
+#include "nerdminer/version.h"
+#include "nerdminer/stratum_client.h"
 
 class NerdMinerApp {
 public:
@@ -33,38 +32,35 @@ public:
         }
 
         printBanner();
-        printStartConnection();
+
+        std::cout << "Connecting to pool server: " << host << ":" << port << "\n";
+        nerdminer::StratumClient client(host, port, user, password);
+        client.onResponse = [](const nerdminer::json& resp) {
+            std::cout << "Response: " << resp.dump() << std::endl;
+        };
+        client.onNotification = [](const nerdminer::json& note) {
+            std::cout << "Notification: " << note.dump() << std::endl;
+        };
+
+        client.connect();
+        client.subscribe();
+        client.authorize();
+        client.listen();
         
-        nerdminer::Connection connection("public-pool.io", 21496);
-        if (!connection.connect()) {
-            std::cerr << "Failed to connect to mining pool." << std::endl;
-            return false;
-        }
-        std::cout << "Successfully connected to mining pool." << std::endl;
-
-        // ===== Handshake Stratum =====
-        nerdminer::StratumClient stratum(connection);
-        if (!stratum.subscribe()) {
-            std::cerr << "Handshake failed." << std::endl;
-            return 1;
-        }
-        // ==============================
-
-        connection.disconnect();
-        std::cout << "Disconnected." << std::endl;
         return true;
     }
 
 private:
+    const std::string host = "public-pool.io";
+    const uint16_t port = 21496;
+    const std::string user = "bc1qcdlauj9j9jnxcdlxqkrrus40p7cp9ph6ermkfz.raspberrypi";
+    const std::string password = "x";
+
     void printBanner() const {
         std::cout << "====================================\n";
         std::cout << "      " << nerdminer::PROJECT_NAME << " - v" << nerdminer::PROJECT_VERSION << "\n";
-        std::cout << "      Raspberry Pi 4 Bitcoin Miner\n";
+        std::cout << "      " << nerdminer::PROJECT_PLATFORM << "\n";
         std::cout << "====================================\n\n";
-    }
-
-    void printStartConnection() const {
-        std::cout << "Connecting to mining pool...\n";
     }
 
     void printHelp() const {

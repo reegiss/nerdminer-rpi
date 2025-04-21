@@ -22,5 +22,6 @@ namespace nerdminer {
     inline constexpr std::string_view PROJECT_NAME = "nerdminer-rpi";
     inline constexpr std::string_view CURRENT_VERSION_DATE = "2025-01-01";
     inline constexpr std::string_view CURRENT_VERSION_AUTHOR = "Regis Araujo Melo";
+    inline constexpr std::string_view PROJECT_PLATFORM = "Raspberry Pi 4 Bitcoin Miner";
 
 }
