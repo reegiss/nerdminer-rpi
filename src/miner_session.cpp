@@ -1,15 +1,15 @@
 /**
- * Project: nerdminer-rpi
- * File: miner_session.cpp
- * Description: implementation of the miner session
- *
- * Author: Regis Araujo Melo
- * Date: 2025-04-21
- * Version: 0.1.0
- *
- * MIT License
- * © 2025 Regis Araujo Melo
- */
+* Project: nerdminer-rpi
+* File: miner_session.cpp
+* Description: implementation of the miner session
+*
+* Author: Regis Araujo Melo
+* Date: 2025-04-21
+* Version: 0.1.0
+*
+* MIT License
+* © 2025 Regis Araujo Melo
+*/
 
 #include "nerdminer/miner_session.h"
 #include "nerdminer/miner_job.h"
@@ -49,7 +49,6 @@ void MinerSession::start() {
 }
 
 void MinerSession::handleNotification(const nerdminer::json& note) {
-    // std::cout << "Received notification: " << note.dump() << std::endl;
     if (note.contains("method")) {
         const std::string method = note["method"].get<std::string>();
         if (method == "mining.notify") {
@@ -70,8 +69,11 @@ void MinerSession::handleNotification(const nerdminer::json& note) {
 void MinerSession::startMiningThreads() {
     miningActive = true;
     std::cout << "Starting mining threads..." << std::endl;
+    miners_.clear();
+    threadHashCounts_.resize(numThreads_, 0);
+    lastHashrateTime_ = std::chrono::steady_clock::now();
     for (int i = 0; i < numThreads_; ++i) {
-        std::cout << "Starting thread " << i << std::endl;  // Adicionando log para depuração
+        std::cout << "Starting thread " << i << std::endl;
         miners_.emplace_back(&MinerSession::miningLoop, this, i);
     }
 }
@@ -91,7 +93,7 @@ void MinerSession::stopMiningThreads() {
 
 void MinerSession::miningLoop(int threadId) {
     std::cout << "Thread " << threadId << " started mining loop." << std::endl;
-    while (running_) {
+    while (miningActive) {
         if (!currentJob_.valid) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
@@ -103,30 +105,51 @@ void MinerSession::miningLoop(int threadId) {
         header.merkleRoot = nerdminer::calculateMerkleRoot(currentJob_.coinbase1 + extranonce1_ + currentJob_.coinbase2, currentJob_.merkleBranches);
         header.timestamp = std::stoul(currentJob_.nTime, nullptr, 16);
         header.bits = std::stoul(currentJob_.nBits, nullptr, 16);
-        header.nonce = 0; // Inicializa o nonce
+        header.nonce = 0;
 
-        // Calcula o alvo a partir do bits
         auto target = nerdminer::targetFromBits(header.bits);
 
-        // Loop de tentativa de encontrar um nonce válido
         for (uint32_t nonce = 0; nonce < 0xFFFFFFFF; ++nonce) {
             header.nonce = nonce;
             auto headerBytes = nerdminer::buildBlockHeader(header);
             auto hash = nerdminer::doubleSHA256(headerBytes);
 
+            threadHashCounts_[threadId]++;
+
             if (nerdminer::isHashBelowTarget(hash, target)) {
-                std::cout << "Thread " << threadId << " found valid nonce: " << nonce << std::endl;
-                std::cout << "Hash: " << nerdminer::bytesToHex(hash) << std::endl;
-                // Aqui você pode enviar o resultado pro servidor ou salvar o share
-                break; // Sai do for, pode minerar o próximo trabalho
+                {
+                    std::lock_guard<std::mutex> lock(outputMutex_);
+                    std::cout << "\033[1;34mThread " << threadId << " found valid nonce: " << nonce << "\n"
+                            << "Hash: " << nerdminer::bytesToHex(hash) << "\033[0m" << std::endl;
+                }
+                break;
             }
 
-            if (!running_) {
-                break; // Se o minerador parar, sai imediatamente
+            if (!miningActive) {
+                break;
+            }
+
+            auto now = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - lastHashrateTime_).count();
+            if (elapsed >= 5) {
+                uint64_t totalHashes = 0;
+                for (const auto& count : threadHashCounts_) {
+                    totalHashes += count;
+                }
+                double hashrate = static_cast<double>(totalHashes) / elapsed;
+                
+                {
+                    std::lock_guard<std::mutex> lock(outputMutex_);
+                    std::cout << "\033[1;32mHashrate: " << hashrate << " H/s\033[0m" << std::endl;
+                }
+
+                for (auto& count : threadHashCounts_) {
+                    count = 0;
+                }
+                lastHashrateTime_ = now;
             }
         }
     }
 }
 
 } // namespace nerdminer
- 

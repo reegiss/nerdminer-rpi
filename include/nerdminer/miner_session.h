@@ -42,6 +42,9 @@ private:
     std::atomic<bool> miningActive;
     int numThreads_;
     std::mutex currentJobMutex_;
+    std::vector<uint64_t> threadHashCounts_;
+    std::chrono::time_point<std::chrono::steady_clock> lastHashrateTime_;
+    mutable std::mutex outputMutex_;
 };
 
 } // namespace nerdminer
