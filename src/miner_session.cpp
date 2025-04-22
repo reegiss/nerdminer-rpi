@@ -43,9 +43,9 @@ void MinerSession::start() {
     client_.connect();
     client_.subscribe();
     client_.authorize();
-    client_.listen();
     stopMiningThreads();
     startMiningThreads();
+    client_.listen();
 }
 
 void MinerSession::handleNotification(const nerdminer::json& note) {
