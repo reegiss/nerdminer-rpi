@@ -90,6 +90,7 @@ void MinerSession::stopMiningThreads() {
 }
 
 void MinerSession::miningLoop(int threadId) {
+    std::cout << "Thread " << threadId << " started mining loop." << std::endl;
     while (running_) {
         if (!currentJob_.valid) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));

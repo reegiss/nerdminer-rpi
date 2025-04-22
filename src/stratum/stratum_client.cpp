@@ -22,11 +22,17 @@
 
     StratumClient::StratumClient(const std::string& host, uint16_t port,
         const std::string& user, const std::string& password)
-        : socket_(ioContext_), host_(host), port_(port),
-        user_(user), password_(password), requestId_(0) {}
+        : socket_(ioContext_), 
+        host_(host), 
+        port_(port),
+        user_(user), 
+        password_(password), 
+        requestId_(0) {}
     
-        StratumClient::~StratumClient() {
-        if (socket_.is_open()) socket_.close();
+    StratumClient::~StratumClient() {
+        if (socket_.is_open()) {
+            socket_.close();
+        }
     }
 
     void StratumClient::connect() {
@@ -56,8 +62,9 @@
     void StratumClient::sendRequest(const json& req) {
         std::string msg = req.dump() + "\n";
         boost::asio::async_write(socket_, boost::asio::buffer(msg),
-            std::bind(&StratumClient::handleWrite, this,
-                      std::placeholders::_1, std::placeholders::_2));
+            [this](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+                handleWrite(ec, bytes_transferred);
+            });
     }
 
     void StratumClient::listen() {
@@ -67,22 +74,27 @@
 
     void StratumClient::doRead() {
         boost::asio::async_read_until(socket_, buffer_, '\n',
-            std::bind(&StratumClient::handleRead, this,
-                      std::placeholders::_1, std::placeholders::_2));
+            [this](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+                handleRead(ec, bytes_transferred);
+            });
     }
 
     void StratumClient::handleRead(const boost::system::error_code& ec, std::size_t bytes_transferred) {
-        (void)bytes_transferred;  // evita warning de parâmetro não usado
+        (void)bytes_transferred;  // evitar warning de parâmetro não usado
         if (!ec) {
             std::istream is(&buffer_);
             std::string line;
             std::getline(is, line);
             json resp = json::parse(line);
+
             if (resp.contains("method")) {
                 onNotification(resp);
-            } else {
+            } else if (resp.contains("result")) {
                 onResponse(resp);
+            } else {
+                std::cerr << "Unexpected response: " << resp.dump() << std::endl;
             }
+
             doRead();
         } else {
             std::cerr << "Read error: " << ec.message() << std::endl;
@@ -96,18 +108,16 @@
     }
 
     void StratumClient::submitShare(const nerdminer::MiningJob& job, uint32_t nonce) {
-        // Crie o JSON para enviar ao servidor Stratum
         json req = {
             {"id", requestId_++},
             {"method", "mining.submit"},
             {"params", {
-                job.coinbase1,               // Aqui você usaria os dados da coinbase1
-                job.merkleBranches,          // Merkle branches
-                nonce                        // Nonce encontrado pela mineração
+                job.coinbase1,
+                job.merkleBranches,
+                nonce
             }}
         };
-    
-        // Envia a requisição para o servidor Stratum
+
         sendRequest(req);
     }
  }
