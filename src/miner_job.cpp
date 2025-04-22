@@ -49,8 +49,11 @@ MiningJob MiningJob::fromNotification(const json& note) {
                     job.merkleBranches.push_back(branch.get<std::string>());
                 }
                 job.version = params[5].get<std::string>();
+                job.versionInt = std::stoul(job.version, nullptr, 16);
                 job.nBits = params[6].get<std::string>();
+                job.bits = std::stoul(job.nBits, nullptr, 16);
                 job.nTime = params[7].get<std::string>();
+                job.ntime = std::stoul(job.nTime, nullptr, 16);
 
                 // Verifica se o último campo é um booleano
                 if (params[8].is_boolean()) {

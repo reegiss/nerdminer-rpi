@@ -28,11 +28,14 @@ struct MiningJob {
     std::string coinbase2;
     std::vector<std::string> merkleBranches;
     std::string version;
-    // uint32_t version;
     std::string nBits;
     std::string nTime;
-    bool cleanJobs;
+    bool cleanJobs = false;
     bool valid = false;
+
+    uint32_t versionInt = 0;
+    uint32_t bits = 0;
+    uint32_t ntime = 0;
 
     static MiningJob fromNotification(const json& note);
 };

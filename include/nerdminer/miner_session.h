@@ -29,6 +29,8 @@ public:
     void handleNotification(const nerdminer::json& note);
     void start();
 private:
+    bool running_ = true;
+    std::string extranonce1_;
     void miningLoop(int threadId);
     void startMiningThreads();
     void stopMiningThreads();

@@ -89,21 +89,39 @@ void MinerSession::stopMiningThreads() {
 }
 
 void MinerSession::miningLoop(int threadId) {
-    std::cout << "[Thread " << threadId << "] Starting mining loop..." << std::endl;
-    while (miningActive) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Simula o trabalho de mineração
+    while (running_) {
+        if (!currentJob_.valid) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
 
-        std::lock_guard<std::mutex> lock(currentJobMutex_);
-        if (currentJob_.valid) {
-            // Simula a mineração
-            std::cout << "[Thread " << threadId << "] Mining job: " << currentJob_.jobId << std::endl;
+        nerdminer::BlockHeader header;
+        header.version = std::stoul(currentJob_.version, nullptr, 16);
+        header.prevHash = currentJob_.prevHash;
+        header.merkleRoot = nerdminer::calculateMerkleRoot(currentJob_.coinbase1 + extranonce1_ + currentJob_.coinbase2, currentJob_.merkleBranches);
+        header.timestamp = std::stoul(currentJob_.nTime, nullptr, 16);
+        header.bits = std::stoul(currentJob_.nBits, nullptr, 16);
+        header.nonce = 0; // Inicializa o nonce
 
-            // Aqui você pode adicionar a lógica de mineração real
-            // Por exemplo, calcular o hash e verificar se é válido
-            // ...
+        // Calcula o alvo a partir do bits
+        auto target = nerdminer::targetFromBits(header.bits);
 
-            // Simula o envio de uma solução
-            client_.submitShare(currentJob_, 0); // Envia um nonce fictício
+        // Loop de tentativa de encontrar um nonce válido
+        for (uint32_t nonce = 0; nonce < 0xFFFFFFFF; ++nonce) {
+            header.nonce = nonce;
+            auto headerBytes = nerdminer::buildBlockHeader(header);
+            auto hash = nerdminer::doubleSHA256(headerBytes);
+
+            if (nerdminer::isHashBelowTarget(hash, target)) {
+                std::cout << "Thread " << threadId << " found valid nonce: " << nonce << std::endl;
+                std::cout << "Hash: " << nerdminer::bytesToHex(hash) << std::endl;
+                // Aqui você pode enviar o resultado pro servidor ou salvar o share
+                break; // Sai do for, pode minerar o próximo trabalho
+            }
+
+            if (!running_) {
+                break; // Se o minerador parar, sai imediatamente
+            }
         }
     }
 }
