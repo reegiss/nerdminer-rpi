@@ -16,20 +16,20 @@
  #include <string>
  #include <vector>
  #include <cstdint>
-
+ 
  namespace nerdminer {
-
-    struct BlockHeader {
-        uint32_t version;
-        std::string prevHash; // 32 bytes, little-endian
-        std::string merkleRoot; // 32 bytes, little-endian
-        uint32_t timestamp;
-        uint32_t bits;
-        uint32_t nonce;
-    };
-
-    std::string buildCoinbaseTransaction(const std::string& coinb1, const std::string& extranonce, const std::string& coinb2);
-    std::string calculateMerkleRoot(const std::string& coinbaseTransaction, const std::vector<std::string>& merkleBranches);
-    std::vector<uint8_t> buildBlockHeader(const BlockHeader& header);
-
+ 
+     struct BlockHeader {
+         uint32_t version;
+         std::string prevHash;    // 32 bytes, little-endian
+         std::string merkleRoot;  // 32 bytes, little-endian
+         uint32_t timestamp;
+         uint32_t bits;
+         uint32_t nonce;
+     };
+ 
+     std::string buildCoinbaseTransaction(const std::string& coinb1, const std::string& extranonce, const std::string& coinb2);
+     std::string calculateMerkleRoot(const std::string& coinbaseTransaction, const std::vector<std::string>& merkleBranches);
+     std::vector<uint8_t> buildBlockHeader(const BlockHeader& header);
+ 
  } // namespace nerdminer

@@ -1,77 +1,102 @@
 /**
- * Project: nerdminer-rpi
- * File: nerdminer_block.cpp
- * Description: implementation of the NerdMiner block
- *
- * Author: Regis Araujo Melo
- * Date: 2025-04-21
- * Version: 0.1.0
- *
- * MIT License
- * © 2025 Regis Araujo Melo
- */
+* Project: nerdminer-rpi
+* File: nerdminer_block.cpp
+* Description: implementation of the NerdMiner block
+*
+* Author: Regis Araujo Melo
+* Date: 2025-04-21
+* Version: 0.1.0
+*
+* MIT License
+* © 2025 Regis Araujo Melo
+*/
 
-#include <nerdminer/nerdminer_block.h>
-#include <openssl/sha.h>
+#include "nerdminer/nerdminer_block.h"
+#include <vector>
+#include <string>
+#include <cstdint>
+#include <cstring>
 #include <sstream>
 #include <iomanip>
-
+#include <openssl/sha.h>
+#include <atomic>
+#include <thread>
+#include <iostream>
 
 namespace nerdminer {
 
-    std::string buildCoinbaseTransaction(const std::string& coinb1, const std::string& extranonce, const std::string& coinb2) {
-        return coinb1 + extranonce + coinb2;
-    }
-
-    std::string calculateMerkleRoot(const std::string& coinbaseTransaction, const std::vector<std::string>& merkleBranches) {
-        auto doubleSHA256 = [](const std::string& hex) {
-            std::vector<uint8_t> bytes;
-            for (size_t i = 0; i < hex.length(); i += 2) {
-                bytes.push_back(std::stoi(hex.substr(i, 2), nullptr, 16));
-            }
-            uint8_t hash1[SHA256_DIGEST_LENGTH];
-            SHA256(bytes.data(), bytes.size(), hash1);
-            uint8_t hash2[SHA256_DIGEST_LENGTH];
-            SHA256(hash1, SHA256_DIGEST_LENGTH, hash2);
-            std::ostringstream oss;
-            for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-                oss << std::hex << std::setw(2) << std::setfill('0') << (int)hash2[i];
-            }
-            return oss.str();
-        };
-    
-        std::string merkle = doubleSHA256(coinbaseTransaction);
-        for (const auto& branch : merkleBranches) {
-            merkle = doubleSHA256(merkle + branch);
+// Funções auxiliares internas
+namespace {
+    std::vector<uint8_t> hexStringToBytes(const std::string& hex) {
+        std::vector<uint8_t> bytes;
+        for (size_t i = 0; i < hex.length(); i += 2) {
+            uint8_t byte = (uint8_t) strtol(hex.substr(i, 2).c_str(), nullptr, 16);
+            bytes.push_back(byte);
         }
-        return merkle;
+        return bytes;
     }
 
-    std::vector<uint8_t> buildBlockHeader(const BlockHeader& header) {
-        auto hexToBytes = [](const std::string& hex) {
-            std::vector<uint8_t> bytes;
-            for (size_t i = 0; i < hex.length(); i += 2) {
-                bytes.push_back(std::stoi(hex.substr(i, 2), nullptr, 16));
-            }
-            return bytes;
-        };
-    
-        std::vector<uint8_t> block;
-    
-        // Adiciona campos do header
-        for (int i = 0; i < 4; ++i) block.push_back((header.version >> (i * 8)) & 0xFF);
-    
-        auto prevHashBytes = hexToBytes(header.prevHash);
-        block.insert(block.end(), prevHashBytes.begin(), prevHashBytes.end());
-    
-        auto merkleRootBytes = hexToBytes(header.merkleRoot);
-        block.insert(block.end(), merkleRootBytes.begin(), merkleRootBytes.end());
-    
-        for (int i = 0; i < 4; ++i) block.push_back((header.timestamp >> (i * 8)) & 0xFF);
-        for (int i = 0; i < 4; ++i) block.push_back((header.bits >> (i * 8)) & 0xFF);
-        for (int i = 0; i < 4; ++i) block.push_back((header.nonce >> (i * 8)) & 0xFF);
-    
-        return block;
+    std::string bytesToHex(const std::vector<uint8_t>& bytes) {
+        std::ostringstream oss;
+        for (auto b : bytes) {
+            oss << std::hex << std::setw(2) << std::setfill('0') << (int)b;
+        }
+        return oss.str();
     }
 
+    void appendInt32(std::vector<uint8_t>& buffer, uint32_t value) {
+        buffer.push_back(value & 0xFF);
+        buffer.push_back((value >> 8) & 0xFF);
+        buffer.push_back((value >> 16) & 0xFF);
+        buffer.push_back((value >> 24) & 0xFF);
+    }
+
+    std::vector<uint8_t> doubleSHA256(const std::vector<uint8_t>& data) {
+        uint8_t hash1[SHA256_DIGEST_LENGTH];
+        SHA256_CTX sha256;
+
+        SHA256_Init(&sha256);
+        SHA256_Update(&sha256, data.data(), data.size());
+        SHA256_Final(hash1, &sha256);
+
+        uint8_t hash2[SHA256_DIGEST_LENGTH];
+        SHA256_Init(&sha256);
+        SHA256_Update(&sha256, hash1, SHA256_DIGEST_LENGTH);
+        SHA256_Final(hash2, &sha256);
+
+        return std::vector<uint8_t>(hash2, hash2 + SHA256_DIGEST_LENGTH);
+    }
 }
+
+// Implementações públicas
+
+std::string buildCoinbaseTransaction(const std::string& coinb1, const std::string& extranonce, const std::string& coinb2) {
+    return coinb1 + extranonce + coinb2;
+}
+
+std::string calculateMerkleRoot(const std::string& coinbaseTransaction, const std::vector<std::string>& merkleBranches) {
+    std::vector<uint8_t> merkle = doubleSHA256(hexStringToBytes(coinbaseTransaction));
+
+    for (const auto& branch : merkleBranches) {
+        std::vector<uint8_t> branchBytes = hexStringToBytes(branch);
+        merkle.insert(merkle.end(), branchBytes.begin(), branchBytes.end());
+        merkle = doubleSHA256(merkle);
+    }
+
+    return bytesToHex(merkle);
+}
+
+std::vector<uint8_t> buildBlockHeader(const BlockHeader& header) {
+    std::vector<uint8_t> result;
+
+    appendInt32(result, header.version);
+    result.insert(result.end(), hexStringToBytes(header.prevHash).begin(), hexStringToBytes(header.prevHash).end());
+    result.insert(result.end(), hexStringToBytes(header.merkleRoot).begin(), hexStringToBytes(header.merkleRoot).end());
+    appendInt32(result, header.timestamp);
+    appendInt32(result, header.bits);
+    appendInt32(result, header.nonce);
+
+    return result;
+}
+
+} // namespace nerdminer

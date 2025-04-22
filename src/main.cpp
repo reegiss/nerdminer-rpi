@@ -15,6 +15,7 @@
 #include <string>
 #include "nerdminer/version.h"
 #include "nerdminer/stratum_client.h"
+#include "nerdminer/miner_session.h"
 
 class NerdMinerApp {
 public:
@@ -32,20 +33,7 @@ public:
         }
 
         printBanner();
-
-        std::cout << "Connecting to pool server: " << host << ":" << port << "\n";
-        nerdminer::StratumClient client(host, port, user, password);
-        client.onResponse = [](const nerdminer::json& resp) {
-            std::cout << "Response: " << resp.dump() << std::endl;
-        };
-        client.onNotification = [](const nerdminer::json& note) {
-            std::cout << "Notification: " << note.dump() << std::endl;
-        };
-
-        client.connect();
-        client.subscribe();
-        client.authorize();
-        client.listen();
+        startSession();
         
         return true;
     }
@@ -68,6 +56,12 @@ private:
                     << "Options:\n"
                     << "  -h, --help        Show this help message and exit\n"
                     << "\n";
+    }
+
+    void startSession() {
+        std::cout << "Starting miner session...\n";
+        nerdminer::MinerSession session(host, port, user, password);
+        session.start();
     }
 };
 

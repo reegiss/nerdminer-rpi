@@ -12,6 +12,7 @@
  */
 
 #include <nerdminer/stratum_client.h>
+#include <nerdminer/miner_job.h>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <iostream>
@@ -92,5 +93,21 @@
         if (ec) {
             std::cerr << "Write error: " << ec.message() << std::endl;
         }
+    }
+
+    void StratumClient::submitShare(const nerdminer::MiningJob& job, uint32_t nonce) {
+        // Crie o JSON para enviar ao servidor Stratum
+        json req = {
+            {"id", requestId_++},
+            {"method", "mining.submit"},
+            {"params", {
+                job.coinbase1,               // Aqui você usaria os dados da coinbase1
+                job.merkleBranches,          // Merkle branches
+                nonce                        // Nonce encontrado pela mineração
+            }}
+        };
+    
+        // Envia a requisição para o servidor Stratum
+        sendRequest(req);
     }
  }
