@@ -71,6 +71,7 @@ void MinerSession::startMiningThreads() {
     miningActive = true;
     std::cout << "Starting mining threads..." << std::endl;
     for (int i = 0; i < numThreads_; ++i) {
+        std::cout << "Starting thread " << i << std::endl;  // Adicionando log para depuração
         miners_.emplace_back(&MinerSession::miningLoop, this, i);
     }
 }
