@@ -29,13 +29,43 @@ MinerSession::MinerSession(const std::string& host, uint16_t port, const std::st
     }
     std::cout << "Detected " << numThreads_ << " CPU cores. Starting " << numThreads_ << " mining threads." << std::endl;
 
-    client_.onResponse = [](const nerdminer::json& resp) {
+    client_.onResponse = [this](const nerdminer::json& resp) {
         std::cout << "Response: " << resp.dump() << std::endl;
+        handleResponse(resp);
     };
 
     client_.onNotification = [this](const nerdminer::json& note) {
         handleNotification(note);
     };
+}
+
+void MinerSession::handleResponse(const nerdminer::json& response) {
+    if (response.contains("id") && response["id"].is_number()) {
+        int respId = response["id"].get<int>();
+
+        // Verificando se o ID de resposta está na lista de pendentes
+        if (pendingSubmits_.count(respId)) {
+            std::cout << "[*] Found pending submit for response ID: " << respId << std::endl;
+            handleSubmitResponse(response);
+            pendingSubmits_.erase(respId);
+        } else {
+            std::cout << "[*] No pending submit for response ID: " << respId << std::endl;
+        }
+    }
+}
+
+void MinerSession::handleSubmitResponse(const nerdminer::json& response) {
+    if (response.contains("result") && response["result"].is_boolean()) {
+        if (response["result"].get<bool>()) {
+            std::cout << "\033[1;32m[*] Share accepted!\033[0m" << std::endl;
+        } else {
+            std::cout << "\033[1;31m[!] Share rejected!\033[0m" << std::endl;
+        }
+    } else if (response.contains("error") && !response["error"].is_null()) {
+        std::cout << "\033[1;31m[!] Share rejected with error: " << response["error"].dump() << "\033[0m" << std::endl;
+    } else {
+        std::cout << "[?] Unknown response to share submission." << std::endl;
+    }
 }
 
 void MinerSession::start() {

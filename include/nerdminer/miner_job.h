@@ -30,6 +30,7 @@ struct MiningJob {
     std::string version;
     std::string nBits;
     std::string nTime;
+    std::string extraNonce;
     bool cleanJobs = false;
     bool valid = false;
 

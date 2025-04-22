@@ -45,10 +45,10 @@ private:
     const std::string password = "x";
 
     void printBanner() const {
-        std::cout << "====================================\n";
-        std::cout << "      " << nerdminer::PROJECT_NAME << " - v" << nerdminer::PROJECT_VERSION << "\n";
-        std::cout << "      " << nerdminer::PROJECT_PLATFORM << "\n";
-        std::cout << "====================================\n\n";
+        std::cout << "\033[1;32m====================================\033[0m\n";
+        std::cout << "\033[1;32m      " << nerdminer::PROJECT_NAME << " - v" << nerdminer::PROJECT_VERSION << "\n";
+        std::cout << "\033[1;32m      " << nerdminer::PROJECT_PLATFORM << "\n";
+        std::cout << "\033[1;32m====================================\033[0m\n";
     }
 
     void printHelp() const {

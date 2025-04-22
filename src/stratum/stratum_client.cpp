@@ -17,6 +17,13 @@
 #include <string>
 #include <iostream>
 #include <functional>
+#include <iomanip>
+
+static std::string toHex(uint32_t value, int width = 8) {
+    std::stringstream ss;
+    ss << std::hex << std::setfill('0') << std::setw(width) << value;
+    return ss.str();
+}
 
  namespace nerdminer {
 
@@ -112,12 +119,31 @@
             {"id", requestId_++},
             {"method", "mining.submit"},
             {"params", {
-                job.coinbase1,
-                job.merkleBranches,
-                nonce
+                user_,                    // worker_name
+                job.jobId,                 // job_id
+                job.extraNonce,            // extranonce2
+                job.nTime,                 // ntime (timestamp já string em hexadecimal)
+                toHex(nonce)            // nonce convertido para string hexadecimal
             }}
         };
 
+        std::cout << "Submitting share: Job ID: " << job.jobId << ", Nonce: " << nonce << std::endl;
+    
         sendRequest(req);
     }
+
+    void nerdminer::StratumClient::handleSubmitResponse(const json& response) {
+        if (response.contains("result") && response["result"].is_boolean()) {
+            if (response["result"].get<bool>()) {
+                std::cout << "[*] Share accepted!" << std::endl;
+            } else {
+                std::cout << "[!] Share rejected!" << std::endl;
+            }
+        } else if (response.contains("error") && !response["error"].is_null()) {
+            std::cout << "[!] Share rejected with error: " << response["error"].dump() << std::endl;
+        } else {
+            std::cout << "[?] Unknown response to share submission." << std::endl;
+        }
+    }
+
  }

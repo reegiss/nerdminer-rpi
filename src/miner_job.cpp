@@ -54,6 +54,7 @@ MiningJob MiningJob::fromNotification(const json& note) {
                 job.bits = std::stoul(job.nBits, nullptr, 16);
                 job.nTime = params[7].get<std::string>();
                 job.ntime = std::stoul(job.nTime, nullptr, 16);
+                job.extraNonce = params[7].get<std::string>();
 
                 // Verifica se o último campo é um booleano
                 if (params[8].is_boolean()) {

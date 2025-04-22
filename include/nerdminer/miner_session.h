@@ -27,6 +27,8 @@ class MinerSession {
 public:
     MinerSession(const std::string& host, uint16_t port, const std::string& user, const std::string& password);
     void handleNotification(const nerdminer::json& note);
+    void handleResponse(const json& response);
+    void handleSubmitResponse(const json& response);
     void start();
 private:
     bool running_ = true;
@@ -45,6 +47,7 @@ private:
     std::vector<uint64_t> threadHashCounts_;
     std::chrono::time_point<std::chrono::steady_clock> lastHashrateTime_;
     mutable std::mutex outputMutex_;
+    std::unordered_map<int, std::chrono::steady_clock::time_point> pendingSubmits_;
 };
 
 } // namespace nerdminer

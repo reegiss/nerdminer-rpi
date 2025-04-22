@@ -36,6 +36,7 @@ public:
     std::function<void(const json&)> onNotification;
     std::function<void(const json&)> onResponse;
     void submitShare(const MiningJob& job, uint32_t nonce);
+    void handleSubmitResponse(const json& response);
 private:
     void doRead();
     void handleRead(const boost::system::error_code& ec, std::size_t bytes_transferred);
