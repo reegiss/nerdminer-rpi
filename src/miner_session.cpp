@@ -122,6 +122,7 @@ void MinerSession::miningLoop(int threadId) {
                     std::cout << "\033[1;34mThread " << threadId << " found valid nonce: " << nonce << "\n"
                             << "Hash: " << nerdminer::bytesToHex(hash) << "\033[0m" << std::endl;
                 }
+                client_.submitShare(currentJob_, nonce);
                 break;
             }
 
