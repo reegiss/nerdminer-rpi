@@ -5,33 +5,50 @@ project(nerdminer-rpi VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Incluir diretórios de cabeçalho
+# Include header directories
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-# Definir onde o executável será gerado
+# Set executable output path
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
-# Verificar se o diretório de testes existe e adicionar
+# Find required packages
+find_package(Boost REQUIRED COMPONENTS system)
+find_package(OpenSSL REQUIRED)
+find_package(nlohmann_json 3.2.0 REQUIRED)
+
+# Check for and add tests subdirectory
 if(EXISTS ${PROJECT_SOURCE_DIR}/tests)
     enable_testing()
     add_subdirectory(tests)
 else()
-    message(WARNING "Diretório tests não encontrado.")
+    message(WARNING "Tests directory not found.")
 endif()
 
-# Adicionar o executável principal
+# Add main executable with all source files
 add_executable(nerdminer
     src/main.cpp
+    src/miner_job.cpp
+    src/miner_session.cpp
+    src/nerdminer_block.cpp
+    src/stratum/stratum_client.cpp
 )
 
-# Se o Raspberry Pi for detectado, adicionar flags específicas
+# Raspberry Pi 4 (aarch64) specific flags
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
-    message(STATUS "Configuração para Raspberry Pi 4 (arm64)")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=armv8-a")
+    message(STATUS "Configuring for Raspberry Pi 4 (arm64)")
+    target_compile_options(nerdminer PRIVATE -O3 -march=armv8-a)
 endif()
 
-# Definir macros de compilação
-target_compile_definitions(nerdminer PRIVATE -DPROJECT_NAME="nerdminer-rpi")
+# Compile definitions
+target_compile_definitions(nerdminer PRIVATE PROJECT_NAME=\"nerdminer-rpi\")
 
-# Adicionar o teste
+# Link libraries
+target_link_libraries(nerdminer PRIVATE
+    Boost::system
+    OpenSSL::Crypto
+    nlohmann_json::nlohmann_json
+    pthread
+)
+
+# Add test
 add_test(NAME TestNerdMiner COMMAND nerdminer)

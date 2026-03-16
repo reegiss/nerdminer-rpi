@@ -7,10 +7,9 @@ INCLUDE_DIR := include
 
 CXX         := g++
 CXXFLAGS    := -Wall -Wextra -std=c++17 \
-				-I/usr/include/jsoncpp \
                 -I$(INCLUDE_DIR) \
                 -MMD -MP
-LDFLAGS     := -lpthread -lm -lcrypto
+LDFLAGS     := -lpthread -lm -lcrypto -lboost_system
 
 # Source files
 SRCS := $(wildcard $(SRC_DIR)/*.cpp) $(wildcard $(SRC_DIR)/**/*.cpp)
