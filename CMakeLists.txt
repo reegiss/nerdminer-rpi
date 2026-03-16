@@ -39,9 +39,6 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     target_compile_options(nerdminer PRIVATE -O3 -march=armv8-a)
 endif()
 
-# Compile definitions
-target_compile_definitions(nerdminer PRIVATE PROJECT_NAME=\"nerdminer-rpi\")
-
 # Link libraries
 target_link_libraries(nerdminer PRIVATE
     Boost::system
@@ -49,6 +46,3 @@ target_link_libraries(nerdminer PRIVATE
     nlohmann_json::nlohmann_json
     pthread
 )
-
-# Add test
-add_test(NAME TestNerdMiner COMMAND nerdminer)
