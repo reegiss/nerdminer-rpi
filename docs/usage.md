@@ -20,14 +20,21 @@ for **nerdminer-rpi**.
 
 After building the binary (see [README.md](../README.md#build)), run:
 
+**Makefile build:**
 ```bash
 ./nerdminer-rpi
+```
+
+**CMake build:**
+```bash
+bin/nerdminer
 ```
 
 To display help:
 
 ```bash
-./nerdminer-rpi --help
+./nerdminer-rpi --help   # Makefile build
+bin/nerdminer --help     # CMake build
 ```
 
 ---
@@ -113,7 +120,8 @@ Hashrate: 14200.00 H/s
 To redirect miner output to a file for later analysis:
 
 ```bash
-./nerdminer-rpi 2>&1 | tee miner.log
+./nerdminer-rpi 2>&1 | tee miner.log   # Makefile build
+bin/nerdminer 2>&1 | tee miner.log     # CMake build
 ```
 
 ---

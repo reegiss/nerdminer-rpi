@@ -163,8 +163,19 @@ const std::string password = "x";
 
 ## Usage
 
+**Makefile build** (`./nerdminer-rpi`):
+
 ```
 ./nerdminer-rpi [options]
+
+Options:
+  -h, --help    Show this help message and exit
+```
+
+**CMake build** (`bin/nerdminer`):
+
+```
+bin/nerdminer [options]
 
 Options:
   -h, --help    Show this help message and exit
@@ -173,7 +184,8 @@ Options:
 Example run:
 
 ```
-$ ./nerdminer-rpi
+$ ./nerdminer-rpi        # Makefile build
+$ bin/nerdminer          # CMake build
 ====================================
       nerdminer-rpi - v0.1.0
       Raspberry Pi 4 Bitcoin Miner
@@ -240,7 +252,7 @@ Please make sure your code:
 - Compiles without warnings (`-Wall -Wextra`)
 - Follows the existing C++17 code style
 - Includes relevant test updates where applicable
-- Uses English for all user-facing messages and code comments
+- Uses English for all new user-facing messages and code comments
 
 ---
 
